@@ -1,0 +1,88 @@
+# Credit Card Benefits Configuration - Example
+
+cards:
+  amex_platinum_2026:
+    display_name: "Amex Platinum"
+    year: 2026
+    annual_fee: 895  
+    renewal_month: 7  
+    renewal_day: 13
+    benefits:
+      - id: "resy"
+        category: "Resy"
+        amount: 100
+        frequency: "quarterly"
+        renewal_type: "calendar_year"
+      - id: "saks"
+        category: "Saks"
+        amount: 50
+        frequency: "half_yearly"
+        renewal_type: "calendar_year"
+      - id: "airline"
+        category: "Airline (Delta)"
+        amount: 200
+        frequency: "yearly"
+        renewal_type: "calendar_year"
+      - id: "hotel"
+        category: "Hotel Credit"
+        amount: 300
+        frequency: "half_yearly"
+        renewal_type: "calendar_year"
+      - id: "yearly_bonus"
+        category: "Yearly bonus"
+        amount: 100
+        frequency: "yearly"
+        renewal_type: "card_anniversary"
+      - id: "digital_entertainment"
+        category: "Digital Entertainment"
+        amount: 25
+        frequency: "monthly"
+        renewal_type: "calendar_year"       
+      - id: "uber"
+        category: "Uber cash" 
+        amount: 15
+        frequency: "monthly"
+        renewal_type: "calendar_year"
+
+  amex_platinum_2025:
+    display_name: "Amex Platinum"
+    year: 2025
+    annual_fee: 695  
+    renewal_month: 7  
+    renewal_day: 13
+    benefits:
+      - id: "resy"
+        category: "Resy"
+        amount: 100
+        frequency: "quarterly"
+        renewal_type: "calendar_year"
+      - id: "saks"
+        category: "Saks"
+        amount: 50
+        frequency: "half_yearly"
+        renewal_type: "calendar_year"
+      - id: "airline"
+        category: "Airline (Delta)"
+        amount: 200
+        frequency: "yearly"
+        renewal_type: "calendar_year"
+      - id: "hotel"
+        category: "Hotel Credit"
+        amount: 300
+        frequency: "half_yearly"
+        renewal_type: "calendar_year"
+      - id: "yearly_bonus"
+        category: "Yearly bonus"
+        amount: 100
+        frequency: "yearly"
+        renewal_type: "card_anniversary"
+      - id: "digital_entertainment"
+        category: "Digital Entertainment"
+        amount: 25
+        frequency: "monthly"
+        renewal_type: "calendar_year"       
+      - id: "uber"
+        category: "Uber cash" 
+        amount: 15
+        frequency: "monthly"
+        renewal_type: "calendar_year"
