@@ -288,6 +288,8 @@ def run():
                                         custom_val = float(custom_text)
                                         if custom_val > benefit['amount']:
                                             st.error(f"Amount cannot exceed total (${benefit['amount']})")
+                                        elif custom_val < 0:
+                                            st.error("Amount cannot be negative")
                                         elif custom_val >= 0 and custom_val != current_custom:
                                             calculator.set_custom_amount(benefit['benefit_id'], benefit['period'], custom_val)
                                             st.rerun()
@@ -379,6 +381,8 @@ def run():
                                     custom_val = float(custom_text)
                                     if custom_val > benefit['amount']:
                                         st.error(f"Amount cannot exceed total (${benefit['amount']})")
+                                    elif custom_val < 0:
+                                        st.error("Amount cannot be negative")
                                     elif custom_val >= 0 and custom_val != current_custom:
                                         calculator.set_custom_amount(benefit['benefit_id'], benefit['period'], custom_val)
                                         st.rerun()
