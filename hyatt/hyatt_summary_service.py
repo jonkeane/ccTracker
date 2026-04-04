@@ -255,10 +255,10 @@ class HyattSummaryService:
                         should_count_posted = True
 
                 if should_count_posted:
-                    # Use custom amount if set, otherwise full amount
+                    # Use custom amount if set (including 0), otherwise full amount
                     amount = (
                         benefit['custom_amount']
-                        if benefit['custom_amount'] is not None and benefit['custom_amount'] > 0
+                        if benefit['custom_amount'] is not None
                         else benefit['amount']
                     )
                     total_posted_year += amount

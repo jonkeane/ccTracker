@@ -206,8 +206,15 @@ def run():
                     # Count unique periods to avoid double-counting
                     unique_periods = {b['period'] for b in monthly_benefits}
                     posted_periods = {b['period'] for b in monthly_benefits if b.get('posted')}
-                    total_monthly = sum(b.get('custom_amount') or b['amount'] for b in monthly_benefits)
-                    posted_monthly = sum((b.get('custom_amount') or b['amount']) for b in monthly_benefits if b.get('posted'))
+                    total_monthly = sum(
+                        (b['custom_amount'] if b.get('custom_amount') is not None else b['amount'])
+                        for b in monthly_benefits
+                    )
+                    posted_monthly = sum(
+                        (b['custom_amount'] if b.get('custom_amount') is not None else b['amount'])
+                        for b in monthly_benefits
+                        if b.get('posted')
+                    )
                     posted_count = len(posted_periods)
                     total_count = len(unique_periods)
 
@@ -269,7 +276,7 @@ def run():
                                     # Use text input to allow empty state
                                     custom_text = st.text_input(
                                         "Amount",
-                                        value=str(int(current_custom)) if current_custom and current_custom > 0 else "",
+                                        value=str(int(current_custom)) if current_custom is not None else "",
                                         key=f"{card_key}_{category}_{benefit['benefit_id']}_{idx}_custom",
                                         label_visibility="collapsed",
                                         placeholder=f"${int(benefit['amount'])}"
@@ -281,10 +288,10 @@ def run():
                                         custom_val = float(custom_text)
                                         if custom_val > benefit['amount']:
                                             st.error(f"Amount cannot exceed total (${benefit['amount']})")
-                                        elif custom_val > 0 and custom_val != current_custom:
+                                        elif custom_val >= 0 and custom_val != current_custom:
                                             calculator.set_custom_amount(benefit['benefit_id'], benefit['period'], custom_val)
                                             st.rerun()
-                                    elif current_custom is not None and current_custom > 0:
+                                    elif current_custom is not None:
                                         # Clear the custom amount if field is empty
                                         calculator.set_custom_amount(benefit['benefit_id'], benefit['period'], None)
                                         st.rerun()
@@ -360,7 +367,7 @@ def run():
                                 # Use text input to allow empty state
                                 custom_text = st.text_input(
                                     "Amount",
-                                    value=str(int(current_custom)) if current_custom and current_custom > 0 else "",
+                                    value=str(int(current_custom)) if current_custom is not None else "",
                                     key=f"{card_key}_{category}_{benefit['benefit_id']}_{idx}_custom",
                                     label_visibility="collapsed",
                                     placeholder=f"${int(benefit['amount'])}"
@@ -372,10 +379,10 @@ def run():
                                     custom_val = float(custom_text)
                                     if custom_val > benefit['amount']:
                                         st.error(f"Amount cannot exceed total (${benefit['amount']})")
-                                    elif custom_val > 0 and custom_val != current_custom:
+                                    elif custom_val >= 0 and custom_val != current_custom:
                                         calculator.set_custom_amount(benefit['benefit_id'], benefit['period'], custom_val)
                                         st.rerun()
-                                elif current_custom is not None and current_custom > 0:
+                                elif current_custom is not None:
                                     # Clear the custom amount if field is empty
                                     calculator.set_custom_amount(benefit['benefit_id'], benefit['period'], None)
                                     st.rerun()

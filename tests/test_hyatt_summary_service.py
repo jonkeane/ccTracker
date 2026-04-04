@@ -698,15 +698,15 @@ class TestCalculateYearSummary:
         assert summary['total_posted_year'] == 500  # 300 + 200
         assert summary['total_potential_year'] == 650  # 300 + 200 + 150
 
-    def test_custom_amount_zero_uses_full_amount(
+    def test_custom_amount_zero_is_respected(
         self, summary_service, mock_benefits_calculator
     ):
-        """Custom amount of 0 is treated as not set, uses full amount."""
+        """Custom amount of 0 is treated as explicitly set."""
         # Arrange
         benefits = [
             {
                 'amount': 300,
-                'custom_amount': 0,  # Zero means not used
+                'custom_amount': 0,  # Zero is an explicitly tracked amount
                 'posted': True,
                 'frequency': 'yearly',
             }
@@ -717,4 +717,4 @@ class TestCalculateYearSummary:
         summary = summary_service.calculate_year_summary(benefits, 695, 2025)
 
         # Assert
-        assert summary['total_posted_year'] == 300  # Uses full amount
+        assert summary['total_posted_year'] == 0

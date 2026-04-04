@@ -298,9 +298,9 @@ class BenefitsCalculator:
             if str(current_year) in b['period']
         ]
         
-        # For posted benefits, use custom_amount if set and > 0, otherwise use full amount
+        # For posted benefits, use custom_amount if set (including 0), otherwise use full amount
         total_posted = sum(
-            (b['custom_amount'] if b['custom_amount'] is not None and b['custom_amount'] > 0 else b['amount']) 
+            (b['custom_amount'] if b['custom_amount'] is not None else b['amount']) 
             for b in current_year_benefits if b['posted']
         )
         # For potential benefits, always use the full amount
