@@ -1,52 +1,27 @@
 """Benefits Tracker page for monitoring credit card benefits."""
-import streamlit as st
-from benefits.period_utils import sort_benefits_by_period
-from datetime import datetime
 from calendar import month_name
+from datetime import datetime
+from pathlib import Path
+
+import streamlit as st
+
+from benefits.period_utils import sort_benefits_by_period
+
+
+@st.cache_resource
+def _load_custom_css():
+    """Load custom CSS for this page."""
+    css_file = Path(__file__).parent.parent / "styles" / "benefits_tracker.css"
+    with open(css_file) as f:
+        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
 
 def run():
     """Render the Benefits Tracker page."""
+    _load_custom_css()
+
     st.title("💳 Benefits Tracker")
     st.markdown("Track and verify your credit card benefits as they post.")
-
-    st.markdown(
-        """
-        <style>        
-        /* Make buttons fill their container width */
-        button[data-testid="stBaseButton-secondary"] {
-            width: 100%;
-        }
-        
-        /* Remove any padding/margin from the inner div */
-        div[role="radiogroup"] label > div {
-            padding: 0 !important;
-            margin: 0 !important;
-        }
-
-        /* Hide the actual radio button circles - all possible selectors */
-        div[role="radiogroup"] label > div:has(+ input) {
-            display: none !important;
-            opacity: 0 !important;
-            width: 0 !important;
-            height: 0 !important;
-            position: absolute !important;
-        }
-        
-        /* Hover effect */
-        div[role="radiogroup"] label div:hover {
-            color: rgb(255, 75, 75) !important;
-        }
-        
-        /* Selected tab styling - red text and underline */
-        div[role="radiogroup"] label:has(input:checked) div {
-            color: rgb(255, 75, 75) !important;
-            border-bottom: 1px solid rgb(255, 75, 75) !important;
-        }
-        </style>
-        """,
-        unsafe_allow_html=True
-    )
     
     calculator = st.session_state.calculator
     summary_service = st.session_state.summary_service
@@ -271,7 +246,7 @@ def run():
                                 current_custom = benefit['custom_amount']
                                 
                                 # Create a narrower column for the input
-                                input_col, _ = st.columns([0.5, 1])
+                                input_col, _ = st.columns([0.6, 1])
                                 with input_col:
                                     # Use text input to allow empty state
                                     custom_text = st.text_input(
@@ -279,7 +254,7 @@ def run():
                                         value=str(int(current_custom)) if current_custom is not None else "",
                                         key=f"{card_key}_{category}_{benefit['benefit_id']}_{idx}_custom",
                                         label_visibility="collapsed",
-                                        placeholder=f"${int(benefit['amount'])}"
+                                        placeholder=f"{int(benefit['amount'])}"
                                     )
                                 
                                 # Parse and update custom amount
@@ -372,7 +347,7 @@ def run():
                                     value=str(int(current_custom)) if current_custom is not None else "",
                                     key=f"{card_key}_{category}_{benefit['benefit_id']}_{idx}_custom",
                                     label_visibility="collapsed",
-                                    placeholder=f"${int(benefit['amount'])}"
+                                    placeholder=f"{int(benefit['amount'])}"
                                 )
                             
                             # Parse and update custom amount

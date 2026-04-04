@@ -1,0 +1,55 @@
+/* Make buttons fill their container width */
+button[data-testid="stBaseButton-secondary"] {
+    width: 100%;
+}
+
+/* Remove any padding/margin from the inner div */
+div[role="radiogroup"] label > div {
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+/* Hide the actual radio button circles */
+div[role="radiogroup"] label > div:has(+ input) {
+    display: none !important;
+    opacity: 0 !important;
+    width: 0 !important;
+    height: 0 !important;
+    position: absolute !important;
+}
+
+/* Hover effect */
+div[role="radiogroup"] label div:hover {
+    color: rgb(255, 75, 75) !important;
+}
+
+/* Selected tab styling */
+div[role="radiogroup"] label:has(input:checked) div {
+    color: rgb(255, 75, 75) !important;
+    border-bottom: 1px solid rgb(255, 75, 75) !important;
+}
+
+/* Show a dollar prefix for custom amount text inputs */
+div[data-testid="stTextInput"] {
+    position: relative;
+}
+
+div[data-testid="stTextInput"]::before {
+    content: "$";
+    position: absolute;
+    left: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #6c757d;
+    pointer-events: none;
+    z-index: 1;
+}
+
+div[data-testid="stTextInput"] input {
+    padding-left: 1.4rem !important;
+}
+
+/* Keep the Amount input wide enough to show at least two digits */
+div[data-testid="stTextInputRootElement"] {
+    min-width: 4rem !important;
+}

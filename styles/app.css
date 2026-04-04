@@ -1,0 +1,15 @@
+/* Make all toggles green when checked/active */
+.stCheckbox input[type="checkbox"]:checked + div {
+    background-color: #00cc00 !important;
+}
+
+/* Target the visual toggle element when checked */
+.stCheckbox input[type="checkbox"]:checked ~ div div[class*="st-"] {
+    background-color: #00cc00 !important;
+}
+
+/* Target the inner toggle circle container */
+label[data-baseweb="checkbox"]:has(input:checked) > div:first-child {
+    background-color: #00cc00 !important;
+    border-color: #00cc00 !important;
+}

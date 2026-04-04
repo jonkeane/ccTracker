@@ -1,0 +1,42 @@
+/* Override the green background when toggle is checked */
+.stCheckbox input[type="checkbox"]:checked + div {
+    background-color: unset !important;
+}
+
+.stCheckbox input[type="checkbox"]:checked ~ div div[class*="st-"] {
+    background-color: unset !important;
+}
+
+/* Align toggle inline with input boxes */
+.stCheckbox {
+    display: flex;
+    align-items: center;
+    padding-top: 2rem;
+}
+
+.stCheckbox label {
+    margin-bottom: 0 !important;
+}
+
+/* Render a $ prefix inside Bilt page number inputs */
+div[data-testid="stNumberInput"] {
+    position: relative;
+}
+
+div[data-testid="stNumberInput"]::before {
+    content: "$";
+    position: absolute;
+    left: 0.75rem;
+    top: 2.2rem;
+    color: #6c757d;
+    pointer-events: none;
+    z-index: 1;
+}
+
+div[data-testid="stNumberInput"] input {
+    padding-left: 1.5rem !important;
+}
+
+div[data-testid="InputInstructions"] {
+    display: none;
+}

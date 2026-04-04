@@ -1,6 +1,7 @@
 import streamlit as st
 from benefits.card_processor import CardProcessor
 from benefits.benefits_calculator import BenefitsCalculator
+from bilt.bilt_cash_calculator import BiltCashCalculator
 from hyatt.stays_manager import StaysManager
 from hyatt.hyatt_summary_service import HyattSummaryService
 from pathlib import Path
@@ -14,24 +15,16 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS to make all toggles green when active
-st.markdown("""
-    <style>
-    /* Make all toggles green when checked/active */
-    .stCheckbox input[type="checkbox"]:checked + div {
-        background-color: #00cc00 !important;
-    }
-    /* Target the visual toggle element when checked */
-    .stCheckbox input[type="checkbox"]:checked ~ div div[class*="st-"] {
-        background-color: #00cc00 !important;
-    }
-    /* Target the inner toggle circle container */
-    label[data-baseweb="checkbox"]:has(input:checked) > div:first-child {
-        background-color: #00cc00 !important;
-        border-color: #00cc00 !important;
-    }
-    </style>
-""", unsafe_allow_html=True)
+
+@st.cache_resource
+def _load_custom_css():
+    """Load app-wide custom CSS."""
+    css_file = Path(__file__).parent / "styles" / "app.css"
+    with open(css_file) as f:
+        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+
+
+_load_custom_css()
 
 # Configuration file paths
 CONFIG_PATH = Path("benefits_config.yaml")
@@ -177,21 +170,24 @@ def load_data():
     )
     stays_manager = StaysManager(state_path="stays_state.json")
     summary_service = HyattSummaryService(processor, calculator, stays_manager)
-    return processor, calculator, stays_manager, summary_service
+    bilt_calculator = BiltCashCalculator()
+    return processor, calculator, stays_manager, summary_service, bilt_calculator
 
 
-processor, calculator, stays_manager, summary_service = load_data()
+processor, calculator, stays_manager, summary_service, bilt_calculator = load_data()
 
 # Store in session state for access by page modules
 st.session_state.processor = processor
 st.session_state.calculator = calculator
 st.session_state.stays_manager = stays_manager
 st.session_state.summary_service = summary_service
+st.session_state.bilt_calculator = bilt_calculator
 
 # Define navigation pages
 pages = [
     st.Page("pages/1_benefits_tracker.py", title="Benefits Tracker", icon="💳"),
     st.Page("pages/2_hyatt_nights.py", title="Hyatt Nights", icon="🏨"),
+    st.Page("pages/3_bilt_cash.py", title="Bilt Cash", icon="🏠"),
 ]
 
 # Navigation

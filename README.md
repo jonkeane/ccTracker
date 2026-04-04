@@ -2,6 +2,21 @@
 
 ccTracker is a small Python app for tracking credit card benefits and stay-related progress from transaction data. It focuses on the core business logic for calculating benefits and summarizing activity.
 
+## Bilt Cash Tracker
+
+The app includes a Bilt cash projection tracker for the current calendar year.
+
+Inputs:
+- Bilt cash earned so far (dollars)
+- Fixed monthly mortgage payment to put on the card for the remaining months in the year
+
+Assumptions:
+- Uses only currently earned Bilt cash (no future cash earning projection)
+- Redemption is linear at $0.03 Bilt cash per $1 mortgage spend
+- Bilt cash expires on Dec 31 with up to $100 rollover
+
+Outputs include projected cash usage by year-end, mortgage dollars used, remaining cash, rollover amount, and warning when projected expiration is above $0.
+
 ## Installation
 
 Install test dependencies:
