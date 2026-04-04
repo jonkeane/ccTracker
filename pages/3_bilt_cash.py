@@ -62,7 +62,7 @@ def run():
     col1, col2, col3, col4 = st.columns(4)
     with col1:
         earned_cash_so_far = st.number_input(
-            "Bilt cash earned",
+            "Bilt cash",
             min_value=0.0,
             step=10.0,
             format="%.2f",
