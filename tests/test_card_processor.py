@@ -452,6 +452,30 @@ class TestIntegration:
         assert df[df['year'] == 2024]['cumsum_year'].iloc[0] == 12000.0
         assert df[df['year'] == 2025]['cumsum_year'].iloc[0] == 11000.0
 
+    def test_process_personal_card_loads_nested_folders(self, tmp_path):
+        """CSV files in nested current/historical folders should be discovered."""
+        root_folder = tmp_path / "transactions" / "hyatt personal"
+        current_folder = root_folder / "current"
+        historical_folder = root_folder / "historical"
+        current_folder.mkdir(parents=True)
+        historical_folder.mkdir(parents=True)
+
+        historical_csv = """Transaction Date,Post Date,Description,Category,Type,Amount,Memo
+12/10/2024,12/12/2024,Store A,Shopping,Sale,-1200.00,
+"""
+        current_csv = """Transaction Date,Post Date,Description,Category,Type,Amount,Memo
+01/10/2025,01/12/2025,Store B,Shopping,Sale,-800.00,
+"""
+
+        (historical_folder / "history.CSV").write_text(historical_csv)
+        (current_folder / "current.csv").write_text(current_csv)
+
+        processor = CardProcessor(base_path=tmp_path)
+        df = processor.process_personal_card()
+
+        assert len(df) == 2
+        assert set(df['year'].tolist()) == {2024, 2025}
+
 
 # Mock patch helper
 from unittest.mock import patch

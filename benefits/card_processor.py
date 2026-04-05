@@ -10,7 +10,12 @@ class CardProcessor:
     Replicates logic from night-tracker.R in Python with pandas.
     """
     
-    def __init__(self, base_path="."):
+    def __init__(
+        self,
+        base_path=".",
+        personal_folder="transactions/hyatt personal",
+        business_folder="transactions/hyatt business",
+    ):
         """
         Initialize the card processor.
         
@@ -18,6 +23,8 @@ class CardProcessor:
             base_path: Root directory containing hyatt business/ and hyatt personal/ folders
         """
         self.base_path = Path(base_path)
+        self.personal_folder = personal_folder
+        self.business_folder = business_folder
         self.personal_df = None
         self.business_df = None
     
@@ -38,7 +45,12 @@ class CardProcessor:
             print(f"Warning: Folder {folder_path} does not exist")
             return pd.DataFrame()
         
-        for file in folder_path.glob("*.CSV"):
+        csv_files = [
+            file for file in folder_path.rglob("*")
+            if file.is_file() and file.suffix.lower() == ".csv"
+        ]
+
+        for file in sorted(csv_files):
             try:
                 df = pd.read_csv(file)
                 df['file'] = str(file)
@@ -109,7 +121,7 @@ class CardProcessor:
         Returns:
             DataFrame with processed personal card data
         """
-        df = self.load_csvs_from_folder("transactions/hyatt personal")
+        df = self.load_csvs_from_folder(self.personal_folder)
         
         if df.empty:
             print("No personal card data found")
@@ -157,7 +169,7 @@ class CardProcessor:
         Returns:
             DataFrame with processed business card data
         """
-        df = self.load_csvs_from_folder("transactions/hyatt business")
+        df = self.load_csvs_from_folder(self.business_folder)
         
         if df.empty:
             print("No business card data found")

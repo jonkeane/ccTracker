@@ -1,5 +1,16 @@
 # Credit Card Benefits Configuration - Example
 
+hyatt_cards:
+  personal:
+    folder: "transactions/hyatt personal"
+    card_endings:
+      - "1234"
+      - "4321"
+  business:
+    folder: "transactions/hyatt business"
+    card_endings:
+      - "5309"
+
 cards:
   amex_platinum_2026:
     display_name: "Amex Platinum"

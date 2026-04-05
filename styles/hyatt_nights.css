@@ -1,0 +1,12 @@
+.st-dl {
+    width: 80vw !important;
+    max-width: 80vw !important;
+}
+
+.stCheckbox input[type="checkbox"]:checked + div {
+    background-color: unset !important;
+}
+
+.stCheckbox input[type="checkbox"]:checked ~ div div[class*="st-"] {
+    background-color: unset !important;
+}

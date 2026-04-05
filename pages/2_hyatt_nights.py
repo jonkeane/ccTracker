@@ -1,9 +1,247 @@
 """Hyatt Nights page for tracking stays and nights."""
+from pathlib import Path
+
 import streamlit as st
 import pandas as pd
+from benefits.transaction_csv_manager import TransactionCsvManager
+
+
+@st.cache_resource
+def _load_custom_css():
+    """Load custom CSS for this page."""
+    css_file = Path(__file__).parent.parent / "styles" / "hyatt_nights.css"
+    with open(css_file) as f:
+        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+
+
+def _reload_processor_data():
+    """Reload transaction-derived card data after CSV updates."""
+    processor = st.session_state.processor
+    processor.process_personal_card()
+    processor.process_business_card()
+
+
+def _reset_uploader(uploader_key):
+    """Reset a file_uploader by clearing its session state key."""
+    st.session_state.pop(uploader_key, None)
+
+
+def _refresh_processor_once_per_session():
+    """Ensure CSV-derived processor data is refreshed once per browser session."""
+    if not st.session_state.get("hyatt_processor_refreshed_this_session", False):
+        _reload_processor_data()
+        st.session_state.hyatt_processor_refreshed_this_session = True
+
+
+def _render_upload_validation(manager, uploaded_files, card_type=None):
+    """Show upload validation feedback and return result tuples."""
+    results = []
+    for uploaded_file in uploaded_files:
+        validation = manager.validate_uploaded_file(uploaded_file)
+        if validation["valid"] and card_type is not None:
+            filename_check = manager.validate_filename_card_ending(
+                uploaded_file.name, card_type
+            )
+            if not filename_check["valid"]:
+                validation = {**validation, "valid": False, "message": filename_check["message"]}
+        results.append((uploaded_file, validation))
+        years_display = ", ".join(str(year) for year in validation.get("years", []))
+        if validation["valid"]:
+            st.success(
+                f"{uploaded_file.name}: {validation['row_count']} rows, years [{years_display}]"
+            )
+        else:
+            st.error(f"{uploaded_file.name}: {validation['message']}")
+
+    return results
+
+
+def _render_csv_inventory_panel(manager, inventory_card):
+    """Render inventory and historical upload controls for one card type."""
+    inventory = manager.list_csv_files(inventory_card)
+
+    if not inventory:
+        st.info("No CSV files found for this card.")
+    else:
+        folders = sorted({item["folder"] for item in inventory})
+        if len(folders) == 1:
+            st.caption(f"Path: {folders[0]}")
+        else:
+            st.caption("Paths: " + ", ".join(folders))
+
+        h1, h2, h3, h_del = st.columns([7, 2, 3, 1])
+        with h1:
+            st.markdown("**File**")
+        with h2:
+            st.markdown("**Years**")
+        with h3:
+            st.markdown("**Last Modified**")
+
+        for idx, item in enumerate(inventory):
+            c1, c2, c3, c_del = st.columns([7, 2, 3, 1])
+            with c1:
+                st.write(item["name"])
+            with c2:
+                st.write(", ".join(str(y) for y in item["years"]))
+            with c3:
+                st.write(item["modified"].strftime("%Y-%m-%d %H:%M:%S"))
+            with c_del:
+                if st.button("🗑️", key=f"del_csv_{inventory_card}_{idx}"):
+                    manager.delete_csv_file(item["full_path"])
+                    _reload_processor_data()
+                    st.rerun()
+
+    add_file = st.file_uploader(
+        "Upload CSV",
+        type=["csv", "CSV"],
+        key=f"add_inv_file_{inventory_card}",
+    )
+    add_validation = []
+    if add_file:
+        add_validation = _render_upload_validation(manager, [add_file], card_type=inventory_card)
+    if st.button("💾 Save File", key=f"save_inv_file_{inventory_card}", width="stretch"):
+        if not add_file:
+            st.warning("Select a file first.")
+        elif add_validation and not add_validation[0][1]["valid"]:
+            st.error("Fix invalid file before saving.")
+        else:
+            manager.save_uploaded_file(
+                uploaded_file=add_file,
+                card_type=inventory_card,
+            )
+            _reload_processor_data()
+            _reset_uploader(f"add_inv_file_{inventory_card}")
+            st.success("File saved.")
+            st.rerun()
+
+
+def _render_csv_management_content():
+    """Render filesystem-backed CSV management controls."""
+    hyatt_card_config = st.session_state.get("hyatt_card_config", {})
+    card_folders = {
+        "personal": hyatt_card_config["personal"]["folder"],
+        "business": hyatt_card_config["business"]["folder"],
+    }
+    personal_endings = "/".join(hyatt_card_config["personal"]["card_endings"])
+    business_endings = "/".join(hyatt_card_config["business"]["card_endings"])
+
+    manager = TransactionCsvManager(
+        card_folders=card_folders,
+        card_endings={
+            "personal": hyatt_card_config["personal"]["card_endings"],
+            "business": hyatt_card_config["business"]["card_endings"],
+        },
+    )
+    current_year = pd.Timestamp.now().year
+
+    personal_active = manager.get_active_current_year_file("personal")
+    business_active = manager.get_active_current_year_file("business")
+
+    upload_personal_col, upload_business_col = st.columns(2)
+
+    with upload_personal_col:
+        personal_uploads = st.file_uploader(
+            f"💳 Personal Card Chase ending {personal_endings}",
+            type=["csv", "CSV"],
+            accept_multiple_files=False,
+            key="current_csv_uploads_personal",
+        )
+        if personal_active:
+            st.caption(f"Source: {personal_active['name']}\nUpdated: {personal_active['modified'].strftime('%Y-%m-%d %H:%M:%S')}")
+        else:
+            st.caption("Source: None")
+
+        replace_overlap_personal = st.checkbox(
+            f"Replace personal files that overlap {current_year}",
+            value=True,
+            key="replace_current_overlap_personal",
+            help="When enabled, personal files with overlapping years in root/current are replaced.",
+        )
+
+        personal_validation = []
+        if personal_uploads:
+            personal_validation = _render_upload_validation(manager, [personal_uploads], card_type="personal")
+
+        if st.button("💾 Save File", key="apply_current_uploads_personal", width='stretch'):
+            if not personal_uploads:
+                st.warning("Upload at least one personal file before applying.")
+            elif any(not result[1]["valid"] for result in personal_validation):
+                st.error("Fix invalid personal files before applying.")
+            else:
+                for uploaded_file, _ in personal_validation:
+                    manager.save_uploaded_file(
+                        uploaded_file=uploaded_file,
+                        card_type="personal",
+                        replace_overlapping_years=replace_overlap_personal,
+                    )
+                _reload_processor_data()
+                _reset_uploader("current_csv_uploads_personal")
+                st.success("Personal current-year uploads applied.")
+                st.rerun()
+
+    with upload_business_col:
+        business_uploads = st.file_uploader(
+            f"💳 Business Card Chase ending {business_endings}",
+            type=["csv", "CSV"],
+            accept_multiple_files=False,
+            key="current_csv_uploads_business",
+        )
+        if business_active:
+            st.caption(f"Source: {business_active['name']}\nUpdated: {business_active['modified'].strftime('%Y-%m-%d %H:%M:%S')}")
+        else:
+            st.caption("Source: None")
+
+        replace_overlap_business = st.checkbox(
+            f"Replace business files that overlap {current_year}",
+            value=True,
+            key="replace_current_overlap_business",
+            help="When enabled, business files with overlapping years in root/current are replaced.",
+        )
+
+        business_validation = []
+        if business_uploads:
+            business_validation = _render_upload_validation(manager, [business_uploads], card_type="business")
+
+        if st.button("💾 Save File", key="apply_current_uploads_business", width='stretch'):
+            if not business_uploads:
+                st.warning("Upload at least one business file before applying.")
+            elif any(not result[1]["valid"] for result in business_validation):
+                st.error("Fix invalid business files before applying.")
+            else:
+                for uploaded_file, _ in business_validation:
+                    manager.save_uploaded_file(
+                        uploaded_file=uploaded_file,
+                        card_type="business",
+                        replace_overlapping_years=replace_overlap_business,
+                    )
+                _reload_processor_data()
+                _reset_uploader("current_csv_uploads_business")
+                st.success("Business current-year uploads applied.")
+                st.rerun()
+
+    with st.expander("🧾All CSV files"):
+        personal_tab, business_tab = st.tabs(["Personal", "Business"])
+
+        with personal_tab:
+            _render_csv_inventory_panel(manager, "personal")
+
+        with business_tab:
+            _render_csv_inventory_panel(manager, "business")
+
+
+@st.dialog("📁 CSV Management")
+def _show_csv_management_modal():
+    """Render CSV management inside a modal dialog."""
+    _render_csv_management_content()
+    if st.button("Close", key="close_csv_management_modal", width='stretch'):
+        st.session_state.show_csv_management_modal = False
+        st.rerun()
 
 def run():
     """Render the Hyatt Nights page."""
+    _load_custom_css()
+    _refresh_processor_once_per_session()
+
     st.title("🏨 Hyatt Nights")
     st.markdown("Track your Hyatt nights, bonus night earnings, and elite status nights.")
     
@@ -40,6 +278,15 @@ def run():
         st.metric("Nights Posted", nights_summary['nights_posted'])
     with nights_total_col:
         st.metric("Nights Total", nights_summary['nights_total'])
+
+    if "show_csv_management_modal" not in st.session_state:
+        st.session_state.show_csv_management_modal = False
+
+    if st.button("📁 Manage CSV Files", key="open_csv_management_modal", width='stretch'):
+        st.session_state.show_csv_management_modal = True
+
+    if st.session_state.show_csv_management_modal:
+        _show_csv_management_modal()
         
     # Edit Elite Nights - Stays
     with st.expander("✏️ Stays (Current & Upcoming)"):
@@ -135,10 +382,17 @@ def run():
         
     st.markdown("---")
     
+    hyatt_card_config = st.session_state.get("hyatt_card_config", {})
+    personal_endings = "/".join(hyatt_card_config.get("personal", {}).get("card_endings", []))
+    business_endings = "/".join(hyatt_card_config.get("business", {}).get("card_endings", []))
+
     # ========================================================================
     # PERSONAL CARD SECTION
     # ========================================================================
-    st.subheader("💳 Personal Card (Chase ending 4100/1695)")
+    personal_header = "💳 Personal Card"
+    if personal_endings:
+        personal_header = f"💳 Personal Card (Chase ending {personal_endings})"
+    st.subheader(personal_header)
 
     processor = st.session_state.processor
     personal_summary = processor.get_spending_summary('personal')
@@ -216,7 +470,10 @@ def run():
     # ========================================================================
     # BUSINESS CARD SECTION
     # ========================================================================
-    st.subheader("💳 Business Card (Chase 1505)")
+    business_header = "💳 Business Card"
+    if business_endings:
+        business_header = f"💳 Business Card (Chase ending {business_endings})"
+    st.subheader(business_header)
 
     business_summary = processor.get_spending_summary('business')
     business_breakdown = processor.get_yearly_bonus_nights_breakdown('business')
