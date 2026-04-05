@@ -147,9 +147,9 @@ def _render_csv_management_content():
             key="current_csv_uploads_personal",
         )
         if personal_active:
-            st.caption(f"Source: {personal_active['name']}\nUpdated: {personal_active['modified'].strftime('%Y-%m-%d %H:%M:%S')}")
+            st.caption(f"Source: {personal_active['name']}  \nUpdated: {personal_active['modified'].strftime('%Y-%m-%d %H:%M:%S')}")
         else:
-            st.caption("Source: None")
+            st.caption("Source: None  \nUpdated: None")
 
         replace_overlap_personal = st.checkbox(
             f"Replace personal files that overlap {current_year}",
@@ -187,9 +187,9 @@ def _render_csv_management_content():
             key="current_csv_uploads_business",
         )
         if business_active:
-            st.caption(f"Source: {business_active['name']}\nUpdated: {business_active['modified'].strftime('%Y-%m-%d %H:%M:%S')}")
+            st.caption(f"Source: {business_active['name']}  \nUpdated: {business_active['modified'].strftime('%Y-%m-%d %H:%M:%S')}")
         else:
-            st.caption("Source: None")
+            st.caption("Source: None  \nUpdated: None")
 
         replace_overlap_business = st.checkbox(
             f"Replace business files that overlap {current_year}",

@@ -1,4 +1,5 @@
-.st-dl {
+/* Target the modal dialog by aria-modal and role attributes */
+div[aria-modal="true"][role="dialog"] {
     width: 80vw !important;
     max-width: 80vw !important;
 }
