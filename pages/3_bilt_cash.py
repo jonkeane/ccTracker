@@ -4,6 +4,7 @@ from datetime import datetime
 from pathlib import Path
 
 import streamlit as st
+from app_initialization import ensure_app_session_state_initialized
 
 BILT_STATE_PATH = Path("bilt_state.json")
 
@@ -46,6 +47,7 @@ def _save_bilt_state():
 def run():
     """Render the Bilt cash projection tracker page."""
     _load_custom_css()
+    ensure_app_session_state_initialized()
     
     st.title("🏠 Bilt Cash Tracker")
     st.markdown("Project how much Bilt cash you can use by Dec 31 and detect expiration risk.")

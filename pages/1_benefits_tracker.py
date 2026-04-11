@@ -4,6 +4,7 @@ from datetime import datetime
 from pathlib import Path
 
 import streamlit as st
+from app_initialization import ensure_app_session_state_initialized
 
 from benefits.period_utils import sort_benefits_by_period
 
@@ -19,6 +20,7 @@ def _load_custom_css():
 def run():
     """Render the Benefits Tracker page."""
     _load_custom_css()
+    ensure_app_session_state_initialized()
 
     st.title("💳 Benefits Tracker")
     st.markdown("Track and verify your credit card benefits as they post.")

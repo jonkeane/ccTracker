@@ -3,6 +3,7 @@ from pathlib import Path
 
 import streamlit as st
 import pandas as pd
+from app_initialization import ensure_app_session_state_initialized
 from benefits.transaction_csv_manager import TransactionCsvManager
 
 
@@ -240,6 +241,7 @@ def _show_csv_management_modal():
 def run():
     """Render the Hyatt Nights page."""
     _load_custom_css()
+    ensure_app_session_state_initialized()
     _refresh_processor_once_per_session()
 
     st.title("🏨 Hyatt Nights")
