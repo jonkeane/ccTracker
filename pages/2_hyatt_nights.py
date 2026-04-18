@@ -27,11 +27,39 @@ def _reset_uploader(uploader_key):
     st.session_state.pop(uploader_key, None)
 
 
-def _refresh_processor_once_per_session():
-    """Ensure CSV-derived processor data is refreshed once per browser session."""
-    if not st.session_state.get("hyatt_processor_refreshed_this_session", False):
+def _build_processor_csv_signature():
+    """Build a lightweight signature of current CSV inventory on disk."""
+    processor = st.session_state.processor
+
+    def _scan(folder_name):
+        folder = Path(processor.base_path) / folder_name
+        if not folder.exists():
+            return (str(folder), 0, 0)
+
+        csv_files = [
+            path for path in folder.rglob("*")
+            if path.is_file() and path.suffix.lower() == ".csv"
+        ]
+        if not csv_files:
+            return (str(folder), 0, 0)
+
+        latest_mtime_ns = max(path.stat().st_mtime_ns for path in csv_files)
+        return (str(folder), len(csv_files), latest_mtime_ns)
+
+    return (
+        _scan(processor.hyatt_cards['personal']['folder']),
+        _scan(processor.hyatt_cards['business']['folder']),
+    )
+
+
+def _refresh_processor_if_csvs_changed():
+    """Reload processor data when underlying CSV files change on disk."""
+    signature = _build_processor_csv_signature()
+    previous = st.session_state.get("hyatt_processor_csv_signature")
+
+    if previous != signature:
         _reload_processor_data()
-        st.session_state.hyatt_processor_refreshed_this_session = True
+        st.session_state.hyatt_processor_csv_signature = signature
 
 
 def _render_upload_validation(manager, uploaded_files, card_type=None):
@@ -242,7 +270,7 @@ def run():
     """Render the Hyatt Nights page."""
     _load_custom_css()
     ensure_app_session_state_initialized()
-    _refresh_processor_once_per_session()
+    _refresh_processor_if_csvs_changed()
 
     st.title("🏨 Hyatt Nights")
     st.markdown("Track your Hyatt nights, bonus night earnings, and elite status nights.")

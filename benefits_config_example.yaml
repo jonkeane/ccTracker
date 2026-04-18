@@ -3,11 +3,13 @@
 hyatt_cards:
   personal:
     folder: "transactions/hyatt personal"
+    renewal_day: 2
     card_endings:
       - "1234"
       - "4321"
   business:
     folder: "transactions/hyatt business"
+    renewal_day: 2
     card_endings:
       - "5309"
 

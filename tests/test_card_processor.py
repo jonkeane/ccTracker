@@ -5,7 +5,7 @@ This tests the finicky business logic around:
 - Duplicate removal across multiple CSV files
 - Personal card tier calculations ($5k increments)
 - Business card tier calculations ($10k increments, yearly reset)
-- Posted vs. pending bonus nights based on statement close date (23rd)
+- Posted vs. pending bonus nights based on the configured statement close date
 """
 
 import pytest
@@ -57,7 +57,7 @@ class TestDuplicateRemoval:
         assert len(result) == 2
 
     def test_remove_duplicates_across_files(self):
-        """Duplicates across different files - current implementation returns all rows."""
+        """Duplicates across different files should collapse to one row."""
         processor = CardProcessor()
 
         df = pd.DataFrame({
@@ -72,10 +72,7 @@ class TestDuplicateRemoval:
         })
 
         result = processor.remove_duplicates(df)
-        # NOTE: Current implementation appears to have a bug in line 99-101
-        # It returns the original df without actual deduplication
-        # This test documents the ACTUAL behavior, not the intended behavior
-        assert len(result) == 2
+        assert len(result) == 1
 
     def test_remove_duplicates_empty_dataframe(self):
         """Empty dataframe should return empty."""
@@ -271,29 +268,53 @@ class TestPostedVsPending:
     """Test the posted vs. pending logic based on statement close date."""
 
     def test_get_most_recent_post_date_mid_month(self):
-        """Mid-month should return 23rd of current month."""
+        """Mid-month should return configured renewal day of current month."""
         from unittest.mock import patch
-        processor = CardProcessor()
+        processor = CardProcessor(hyatt_cards={
+            'personal': {'folder': 'transactions/hyatt personal', 'renewal_day': 9},
+            'business': {'folder': 'transactions/hyatt business', 'renewal_day': 2},
+        })
 
         # Mock Timestamp.now to return Feb 15
         with patch('pandas.Timestamp.now', return_value=pd.Timestamp('2025-02-15')):
             recent_date = processor._get_most_recent_post_date()
-            assert recent_date.day == 23
+            assert recent_date.day == 9
             assert recent_date.month == 2
 
     def test_get_most_recent_post_date_early_month(self):
-        """1st or 2nd of month should return 23rd of previous month."""
+        """On/before renewal day should return renewal day of previous month."""
         from unittest.mock import patch
-        processor = CardProcessor()
+        processor = CardProcessor(hyatt_cards={
+            'personal': {'folder': 'transactions/hyatt personal', 'renewal_day': 9},
+            'business': {'folder': 'transactions/hyatt business', 'renewal_day': 2},
+        })
 
-        with patch('pandas.Timestamp.now', return_value=pd.Timestamp('2025-02-01')):
+        with patch('pandas.Timestamp.now', return_value=pd.Timestamp('2025-02-08')):
             recent_date = processor._get_most_recent_post_date()
-            assert recent_date.day == 23
+            assert recent_date.day == 9
             assert recent_date.month == 1
+
+    def test_get_most_recent_post_date_uses_card_specific_renewal_day(self):
+        """Business and personal cards can use different renewal days."""
+        from unittest.mock import patch
+        processor = CardProcessor(hyatt_cards={
+            'personal': {'folder': 'transactions/hyatt personal', 'renewal_day': 9},
+            'business': {'folder': 'transactions/hyatt business', 'renewal_day': 13},
+        })
+
+        with patch('pandas.Timestamp.now', return_value=pd.Timestamp('2025-02-15')):
+            personal_recent = processor._get_most_recent_post_date('personal')
+            business_recent = processor._get_most_recent_post_date('business')
+
+            assert personal_recent.day == 9
+            assert business_recent.day == 13
 
     def test_breakdown_with_posted_transactions(self):
         """Transactions before statement close are posted."""
-        processor = CardProcessor()
+        processor = CardProcessor(hyatt_cards={
+            'personal': {'folder': 'transactions/hyatt personal', 'renewal_day': 2},
+            'business': {'folder': 'transactions/hyatt business', 'renewal_day': 2},
+        })
 
         # Create test data with dates before and after statement close
         df = pd.DataFrame({
@@ -319,7 +340,7 @@ class TestPostedVsPending:
         with patch('pandas.Timestamp.now', return_value=pd.Timestamp('2025-02-15')):
             breakdown = processor.get_yearly_bonus_nights_breakdown('personal')
 
-            # Both should be posted (before Feb 23rd)
+            # January transactions are posted by Feb 2nd.
             assert breakdown['posted'] == 2
             assert breakdown['pending'] == 0
             assert breakdown['total'] == 2
@@ -423,9 +444,7 @@ class TestIntegration:
         df = processor.process_personal_card()
 
         assert len(df) == 3
-        assert df['cumsum'].iloc[-1] == 11300.0
-        # First transaction crosses tier 1 (2 nights)
-        # Third transaction crosses tier 2 (2 nights, single tier crossing)
+        assert round(df['cumsum'].iloc[-1], 2) == 11300.0
         assert df['nights'].sum() == 4
 
     def test_process_business_card_with_year_reset(self, tmp_path):

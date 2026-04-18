@@ -46,9 +46,16 @@ def load_hyatt_card_config(config_path: Path = CONFIG_PATH):
         if not cleaned_endings:
             raise ValueError(f"Invalid config: 'hyatt_cards.{card_type}.card_endings' must contain at least one value")
 
+        renewal_day = card_settings.get("renewal_day")
+        if not isinstance(renewal_day, int) or not (1 <= renewal_day <= 31):
+            raise ValueError(
+                f"Invalid config: 'hyatt_cards.{card_type}.renewal_day' must be an integer between 1 and 31"
+            )
+
         parsed[card_type] = {
             "folder": folder.strip(),
             "card_endings": cleaned_endings,
+            "renewal_day": renewal_day,
         }
 
     return parsed
@@ -85,6 +92,13 @@ def validate_config(config_content):
             cleaned_endings = [str(ending).strip() for ending in endings if str(ending).strip()]
             if not cleaned_endings:
                 return False, f"Invalid config structure: 'hyatt_cards.{card_type}.card_endings' must have at least one entry"
+
+            renewal_day = card_settings.get("renewal_day")
+            if not isinstance(renewal_day, int) or not (1 <= renewal_day <= 31):
+                return (
+                    False,
+                    f"Invalid config structure: 'hyatt_cards.{card_type}.renewal_day' must be an integer between 1 and 31",
+                )
 
         for card_id, card_config in config["cards"].items():
             required_fields = ["display_name", "year", "annual_fee", "renewal_month", "renewal_day", "benefits"]
@@ -190,8 +204,7 @@ def load_data():
     hyatt_card_config = load_hyatt_card_config()
 
     processor = CardProcessor(
-        personal_folder=hyatt_card_config["personal"]["folder"],
-        business_folder=hyatt_card_config["business"]["folder"],
+        hyatt_cards=hyatt_card_config,
     )
     processor.process_personal_card()
     processor.process_business_card()
