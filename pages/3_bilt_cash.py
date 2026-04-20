@@ -44,6 +44,20 @@ def _save_bilt_state():
         )
 
 
+def _ensure_bilt_inputs_initialized():
+    """Hydrate Bilt widget-backed session keys from persisted state when missing."""
+    saved = _load_bilt_state()
+
+    if "bilt_earned_cash" not in st.session_state:
+        st.session_state["bilt_earned_cash"] = saved["earned_cash_so_far"]
+
+    if "bilt_mortgage_payment" not in st.session_state:
+        st.session_state["bilt_mortgage_payment"] = saved["monthly_mortgage_payment"]
+
+    if "bilt_include_extra_month" not in st.session_state:
+        st.session_state["bilt_include_extra_month"] = saved.get("include_one_extra_mortgage_month", False)
+
+
 def run():
     """Render the Bilt cash projection tracker page."""
     _load_custom_css()
@@ -53,13 +67,7 @@ def run():
     st.markdown("Project how much Bilt cash you can use by Dec 31 and detect expiration risk.")
 
     calculator = st.session_state.bilt_calculator
-
-    if "bilt_inputs_loaded" not in st.session_state:
-        saved = _load_bilt_state()
-        st.session_state["bilt_earned_cash"] = saved["earned_cash_so_far"]
-        st.session_state["bilt_mortgage_payment"] = saved["monthly_mortgage_payment"]
-        st.session_state["bilt_include_extra_month"] = saved.get("include_one_extra_mortgage_month", False)
-        st.session_state["bilt_inputs_loaded"] = True
+    _ensure_bilt_inputs_initialized()
 
     col1, col2, col3, col4 = st.columns(4)
     with col1:
