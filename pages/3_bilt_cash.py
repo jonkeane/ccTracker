@@ -1,6 +1,6 @@
 """Bilt Cash tracker page for year-end usage projection."""
 import json
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 
 import streamlit as st
@@ -94,6 +94,7 @@ def run():
     projection = calculator.project_usage(
         earned_cash_so_far=earned_cash_so_far,
         monthly_mortgage_payment=monthly_mortgage_payment,
+        as_of_date=date.today(),
         include_one_extra_mortgage_month=st.session_state.get("bilt_include_extra_month", False),
     )
     with col3:

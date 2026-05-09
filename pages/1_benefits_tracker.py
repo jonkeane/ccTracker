@@ -1,6 +1,6 @@
 """Benefits Tracker page for monitoring credit card benefits."""
 from calendar import month_name
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 
 import streamlit as st
@@ -58,7 +58,7 @@ def run():
             for year in available_years:
                 card_key_check = card_groups[base_name]['years'][year]
                 start_date, end_date = calculator.get_anniversary_year_range(card_key_check, int(year))
-                if start_date <= calculator.today <= end_date:
+                if start_date <= date.today() <= end_date:
                     current_anniversary_year = year
                     break
             
@@ -120,7 +120,7 @@ def run():
                     categories[cat] = []
                 categories[cat].append(benefit)
 
-            today = calculator.today
+            today = date.today()
 
             def get_benefit_disabled_state(benefit, renewal_type):
                 if benefit.get('frequency') == 'every_4_years':

@@ -1,4 +1,5 @@
 """Hyatt Nights page for tracking stays and nights."""
+from datetime import date
 from pathlib import Path
 
 import streamlit as st
@@ -282,7 +283,7 @@ def run():
 
     # Get all calculated data from service
     summary_service = st.session_state.summary_service
-    nights_summary = summary_service.calculate_nights_summary()
+    nights_summary = summary_service.calculate_nights_summary(reference_date=date.today())
 
     cc_nights_pending_col, upcoming_nights_col, goh_upcoming_col = st.columns(3)
     cc_nights_posted_col, current_nights_col, goh_posted_col = st.columns(3)
