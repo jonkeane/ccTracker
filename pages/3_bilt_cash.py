@@ -136,12 +136,12 @@ def run():
     c8, c9 = st.columns(2)
     with c8:
         st.metric(
-            "Bilt card spending to match mortgage",
+            "Spending to match mortgage",
             f"${projection['additional_card_spend_needed_for_zero_leftover']:,.2f}",
         )
     with c9:
         st.metric(
-            "Bilt card spending to match mortgage",
+            "Spending to match mortgage + $100 rollover",
             f"${projection['additional_card_spend_needed_for_100_leftover']:,.2f}",
         )
 
