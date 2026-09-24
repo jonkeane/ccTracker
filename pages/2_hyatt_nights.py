@@ -1,5 +1,5 @@
 """Hyatt Nights page for tracking stays and nights."""
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 
 import streamlit as st
@@ -322,20 +322,22 @@ def run():
     # Edit Elite Nights - Stays
     with st.expander("✏️ Stays (Current & Upcoming)"):
         st.markdown("**Add a new stay:**")
-        add_col1, add_col2, add_col3, add_col4 = st.columns([2, 2, 2, 1])
+        add_col1, add_col2, add_col3 = st.columns([2, 4, 1])
         
         stays_manager = st.session_state.stays_manager
         
         with add_col1:
             stay_name = st.text_input("Hotel/Location", key="stay_name_input")
         with add_col2:
-            check_in = st.date_input("Check-in", key="stay_checkin_input")
+            stay_dates = st.date_input(
+                "Check-in → Check-out",
+                value=(date.today(), date.today() + timedelta(days=1)),
+                key="stay_dates_input",
+            )
         with add_col3:
-            check_out = st.date_input("Check-out", key="stay_checkout_input")
-        with add_col4:
             if st.button("➕ Add Stay", width='stretch'):
-                if stay_name and check_in and check_out and check_out > check_in:
-                    if stays_manager.add_stay(stay_name, check_in, check_out):
+                if stay_name and len(stay_dates) == 2 and stay_dates[1] > stay_dates[0]:
+                    if stays_manager.add_stay(stay_name, *stay_dates):
                         st.success(f"Added {stay_name}")
                         st.rerun()
                     else:
@@ -362,9 +364,38 @@ def run():
                 with col4:
                     if st.button("✏️", key=f"edit_stay_{idx}", width='stretch'):
                         st.session_state.editing_stay = idx
+                        st.rerun()
                 with col5:
                     if st.button("🗑️", key=f"delete_stay_{idx}", width='stretch'):
                         stays_manager.delete_stay(idx)
+                        st.session_state.pop("editing_stay", None)
+                        st.rerun()
+
+                if st.session_state.get("editing_stay") == idx:
+                    with st.form(key=f"edit_stay_form_{idx}"):
+                        edited_name = st.text_input("Hotel/Location", value=stay['name'])
+                        edited_dates = st.date_input(
+                            "Check-in → Check-out",
+                            value=(stay['check_in'], stay['check_out']),
+                        )
+                        save_col, cancel_col = st.columns(2)
+                        with save_col:
+                            save_edit = st.form_submit_button("Save changes")
+                        with cancel_col:
+                            cancel_edit = st.form_submit_button("Cancel")
+
+                    if save_edit:
+                        if (
+                            len(edited_dates) == 2
+                            and edited_dates[1] > edited_dates[0]
+                            and stays_manager.update_stay(idx, edited_name, *edited_dates)
+                        ):
+                            st.session_state.pop("editing_stay", None)
+                            st.rerun()
+                        else:
+                            st.error("Enter a name and a check-out date after check-in.")
+                    elif cancel_edit:
+                        st.session_state.pop("editing_stay", None)
                         st.rerun()
         else:
             st.info("No stays added yet")

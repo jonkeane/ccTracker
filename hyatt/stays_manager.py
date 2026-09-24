@@ -67,6 +67,21 @@ class StaysManager:
         self.save_state()
         return True
 
+    def update_stay(self, index: int, name: str, check_in: date, check_out: date) -> bool:
+        """Update an existing stay and persist it when the new values are valid."""
+        if not 0 <= index < len(self.state["stays"]):
+            return False
+        if not name or not name.strip() or not check_in or not check_out or check_out <= check_in:
+            return False
+
+        self.state["stays"][index] = {
+            "name": name,
+            "check_in": check_in.isoformat() if isinstance(check_in, date) else str(check_in),
+            "check_out": check_out.isoformat() if isinstance(check_out, date) else str(check_out),
+        }
+        self.save_state()
+        return True
+
     def delete_stay(self, index: int) -> bool:
         """
         Delete a stay by index.

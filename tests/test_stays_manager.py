@@ -120,6 +120,30 @@ class TestStaysOperations:
         assert len(stays) == 1
         assert stays[0]['name'] == "Hotel B"
 
+    def test_update_stay_changes_only_selected_stay_and_persists(self, empty_state_file):
+        manager = StaysManager(state_path=empty_state_file)
+        manager.add_stay("Hotel A", date(2025, 3, 10), date(2025, 3, 13))
+        manager.add_stay("Hotel B", date(2025, 4, 15), date(2025, 4, 18))
+
+        assert manager.update_stay(0, "Hotel A revised", date(2025, 3, 11), date(2025, 3, 15))
+
+        stays = StaysManager(state_path=empty_state_file).get_stays()
+        assert stays == [
+            {"name": "Hotel A revised", "check_in": date(2025, 3, 11), "check_out": date(2025, 3, 15)},
+            {"name": "Hotel B", "check_in": date(2025, 4, 15), "check_out": date(2025, 4, 18)},
+        ]
+
+    def test_update_stay_rejects_invalid_changes_without_modifying_state(self, empty_state_file):
+        manager = StaysManager(state_path=empty_state_file)
+        manager.add_stay("Hotel", date(2025, 3, 10), date(2025, 3, 13))
+
+        assert not manager.update_stay(0, " ", date(2025, 3, 10), date(2025, 3, 13))
+        assert not manager.update_stay(0, "Hotel", date(2025, 3, 13), date(2025, 3, 13))
+        assert not manager.update_stay(2, "Hotel", date(2025, 3, 11), date(2025, 3, 14))
+        assert StaysManager(state_path=empty_state_file).get_stays() == [
+            {"name": "Hotel", "check_in": date(2025, 3, 10), "check_out": date(2025, 3, 13)},
+        ]
+
     def test_delete_stay_invalid_index(self, empty_state_file):
         """Deleting with invalid index should fail."""
         manager = StaysManager(state_path=empty_state_file)
