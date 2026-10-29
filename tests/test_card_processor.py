@@ -204,7 +204,7 @@ class TestBusinessCardBonusNights:
         assert nights == 5
 
     def test_second_tier_crossing(self):
-        """Crossing $20,000 in a year should award 10 nights."""
+        """Crossing $20,000 adds 5 nights to the 5 already earned."""
         processor = CardProcessor()
 
         row = pd.Series({
@@ -213,10 +213,10 @@ class TestBusinessCardBonusNights:
         })
 
         nights = processor._calculate_business_bonus(row)
-        assert nights == 10
+        assert nights == 5
 
-    def test_max_tier_reached(self):
-        """Tier 6 ($60k) caps at 30 nights."""
+    def test_sixth_tier_crossing(self):
+        """Crossing $60,000 adds another 5 nights."""
         processor = CardProcessor()
 
         row = pd.Series({
@@ -225,10 +225,10 @@ class TestBusinessCardBonusNights:
         })
 
         nights = processor._calculate_business_bonus(row)
-        assert nights == 30
+        assert nights == 5
 
-    def test_beyond_max_tier(self):
-        """Beyond tier 6, still caps at 30 nights."""
+    def test_seventh_tier_crossing(self):
+        """Nights continue accruing beyond $60,000 without a cap."""
         processor = CardProcessor()
 
         row = pd.Series({
@@ -237,7 +237,7 @@ class TestBusinessCardBonusNights:
         })
 
         nights = processor._calculate_business_bonus(row)
-        assert nights == 30
+        assert nights == 5
 
     def test_below_first_tier(self):
         """Below $10,000 should award no nights."""
@@ -261,7 +261,29 @@ class TestBusinessCardBonusNights:
         })
 
         nights = processor._calculate_business_bonus(row)
-        assert nights == -10  # Lose tier 2 bonus
+        assert nights == -5  # Reverse only the tier lost
+
+    @pytest.mark.parametrize('previous, current, expected', [
+        (0.0, 20070.01, 10),
+        (12000.0, 35000.0, 10),
+        (0.0, 80000.0, 40),
+        (9000.0, 10000.0, 5),
+        (10000.0, 9999.99, -5),
+        (35000.0, 12000.0, -10),
+        (21000.0, 9000.0, -10),
+        (10000.0, -10000.0, -5),
+        (-10000.0, 10000.0, 5),
+        (0.0, -10000.0, None),
+        (11000.0, 19000.0, None),
+    ])
+    def test_tier_changes(self, previous, current, expected):
+        """Award or reverse five nights for each eligible threshold crossed."""
+        row = pd.Series({
+            'cumsum_year': current,
+            'previous_cumsum_year': previous,
+        })
+
+        assert CardProcessor._calculate_business_bonus(row) == expected
 
 
 class TestPostedVsPending:
@@ -424,6 +446,31 @@ class TestSpendingSummary:
 
 class TestIntegration:
     """Integration tests with mocked CSV files."""
+
+    def test_business_twenty_thousand_posted_and_pending(self, tmp_path):
+        """$20,070.01 earns 10 total nights across two statement periods."""
+        business_folder = tmp_path / 'transactions' / 'hyatt business'
+        business_folder.mkdir(parents=True)
+        (business_folder / 'test.CSV').write_text(
+            'Transaction Date,Post Date,Description,Category,Type,Amount,Memo\n'
+            '01/10/2025,01/12/2025,Store A,Shopping,Sale,-10050.00,\n'
+            '02/05/2025,02/07/2025,Store B,Shopping,Sale,-10020.01,\n'
+        )
+        processor = CardProcessor(base_path=tmp_path, hyatt_cards={
+            'business': {
+                'folder': 'transactions/hyatt business',
+                'renewal_day': 2,
+            },
+        })
+        processor.process_business_card()
+
+        with patch('pandas.Timestamp.now', return_value=pd.Timestamp('2025-02-15')):
+            summary = processor.get_spending_summary('business')
+            breakdown = processor.get_yearly_bonus_nights_breakdown('business')
+
+        assert summary['ytd_spending'] == 20070.01
+        assert summary['spend_to_next_bonus'] == 9929.99
+        assert breakdown == {'posted': 5, 'pending': 5, 'total': 10}
 
     def test_process_personal_card_with_mock_data(self, tmp_path, monkeypatch):
         """Test full personal card processing pipeline."""

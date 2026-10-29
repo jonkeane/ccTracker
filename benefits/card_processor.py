@@ -249,25 +249,21 @@ class CardProcessor:
     @staticmethod
     def _calculate_business_bonus(row):
         """
-        Calculate bonus nights for business card.
-        Every $10,000 spent per year = 5 bonus nights (up to 30)
+        Calculate the change in business card bonus nights for a transaction.
+        Every $10,000 in net calendar-year spending earns 5 nights, without a cap.
         """
         cumsum_year = row['cumsum_year']
         previous_cumsum_year = row['previous_cumsum_year'] if pd.notna(row['previous_cumsum_year']) else 0
         
-        current_tier = int(cumsum_year / 10000)
-        previous_tier = int(previous_cumsum_year / 10000)
-        
-        # Check if we crossed into a new tier
-        if current_tier > previous_tier and current_tier > 0:
-            nights_map = {1: 5, 2: 10, 3: 15, 4: 20, 5: 25, 6: 30}
-            return nights_map.get(current_tier, 30)
-        
-        # Check if we dropped below a tier
-        elif current_tier < previous_tier and current_tier > 0:
-            nights_map = {1: 5, 2: 10, 3: 15, 4: 20, 5: 25, 6: 30}
-            return -nights_map.get(previous_tier, 30)
-        
+        current_tier = max(0, int(cumsum_year / 10000))
+        previous_tier = max(0, int(previous_cumsum_year / 10000))
+
+        # Store only the change: yearly totals sum these per-transaction values.
+        # Refunds reverse only the thresholds lost, including a return to tier 0.
+        tiers_crossed = current_tier - previous_tier
+        if tiers_crossed:
+            return tiers_crossed * 5
+
         return None
     
     def get_spending_summary(self, card_type='personal'):
